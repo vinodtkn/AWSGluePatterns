@@ -1,0 +1,152 @@
+﻿{
+  "paragraphs": [
+    {
+      "text": "%flink.ssql\n\nDROP TABLE IF EXISTS CUSTOMER_STREAM;\n\nCREATE TABLE CUSTOMER_STREAM ( \n   customerid INT,\n   customername VARCHAR(20),\n   emailid VARCHAR(50),\n   countryid INT,\n   APPROXIMATE_ARRIVAL_TIME TIMESTAMP(3) METADATA \nFROM\n   'timestamp' VIRTUAL,\n   WATERMARK FOR APPROXIMATE_ARRIVAL_TIME AS APPROXIMATE_ARRIVAL_TIME - INTERVAL '1' SECOND)\n   PARTITIONED BY (customerid)\n WITH ( \n      'connector' = 'kinesis', \n      'stream' = 'customer', \n      'aws.region' = 'us-east-1',\n      'scan.stream.initpos' = 'LATEST',\n      'format' = 'json');\n      \nDROP TABLE IF EXISTS ORDER_STREAM;\n\nCREATE TABLE ORDER_STREAM ( \n   order_id INT,\n   customer_id INT,\n   product_name VARCHAR(100),\n   quantity INT,\n   price DOUBLE,\n   DATA_ARRIVAL_TIME TIMESTAMP(3) METADATA \nFROM\n   'timestamp' VIRTUAL,\n   WATERMARK FOR DATA_ARRIVAL_TIME AS DATA_ARRIVAL_TIME - INTERVAL '1' SECOND)\n   PARTITIONED BY (customer_id)\n WITH ( \n      'connector' = 'kinesis', \n      'stream' = 'order', \n      'aws.region' = 'us-east-1',\n      'scan.stream.initpos' = 'LATEST',\n      'format' = 'json');\n      \nDROP TABLE IF EXISTS DELIVERY_STREAM;\n\nCREATE TABLE DELIVERY_STREAM (\n   customerid INT,\n   customername VARCHAR(20),\n   emailid VARCHAR(50),\n   countryid INT,\n   order_id INT,\n   product_name VARCHAR(100),\n   quantity INT,\n   price DOUBLE,\n   INJESTION_TIME TIMESTAMP(3) METADATA \nFROM\n   'timestamp' VIRTUAL,\n   WATERMARK FOR INJESTION_TIME AS INJESTION_TIME - INTERVAL '1' SECOND)\n   PARTITIONED BY (customerid)\n WITH ( \n      'connector' = 'kinesis', \n      'stream' = 'delivery', \n      'aws.region' = 'us-east-1',\n      'scan.stream.initpos' = 'LATEST',\n      'format' = 'json');",
+      "user": "anonymous",
+      "dateUpdated": "2023-03-30T21:46:22+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Table has been dropped.\nTable has been created.\nTable has been dropped.\nTable has been created.\nTable has been dropped.\nTable has been created.\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1680204198926_525097882",
+      "id": "paragraph_1680204198926_525097882",
+      "dateCreated": "2023-03-30T19:23:18+0000",
+      "dateStarted": "2023-03-30T21:46:23+0000",
+      "dateFinished": "2023-03-30T21:46:33+0000",
+      "status": "FINISHED",
+      "focus": true,
+      "$$hashKey": "object:2476"
+    },
+    {
+      "text": "%flink.ssql(type=update)\n\nINSERT INTO DELIVERY_STREAM\nSELECT a.customerid,a.customername,a.emailid,a.countryid,b.order_id,b.product_name,b.quantity,SUM(b.price) OVER lastsecond\nFROM CUSTOMER_STREAM as a\nJOIN ORDER_STREAM as b\nON b.customer_id = a.customerid AND b.DATA_ARRIVAL_TIME BETWEEN CAST(a.APPROXIMATE_ARRIVAL_TIME AS TIMESTAMP) - INTERVAL '1' SECOND AND CAST(a.APPROXIMATE_ARRIVAL_TIME AS TIMESTAMP) \nWINDOW lastsecond AS (ORDER BY b.DATA_ARRIVAL_TIME RANGE INTERVAL '1' SECOND PRECEDING);\n",
+      "user": "anonymous",
+      "dateUpdated": "2023-03-31T16:56:49+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "ERROR",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Fail to run sql command: INSERT INTO DELIVERY_STREAM\nSELECT a.customerid,a.customername,a.emailid,a.countryid,b.order_id,b.product_name,b.quantity,SUM(b.price) OVER lastsecond\nFROM CUSTOMER_STREAM as a\nJOIN ORDER_STREAM as b\nON b.customer_id = a.customerid AND b.DATA_ARRIVAL_TIME BETWEEN CAST(a.APPROXIMATE_ARRIVAL_TIME AS TIMESTAMP) - INTERVAL '1' SECOND AND CAST(a.APPROXIMATE_ARRIVAL_TIME AS TIMESTAMP) \nWINDOW lastsecond AS (ORDER BY b.DATA_ARRIVAL_TIME RANGE INTERVAL '1' SECOND PRECEDING)\n"
+          },
+          {
+            "type": "ANGULAR",
+            "data": "<div class='container ng-scope' style='padding-left:0px;padding-right:0px;'>\n    <div class='panel panel-danger'>\n        <div class='panel-heading' ng-click='isOpen=!isOpen' ng-init='isOpen=false' style=\"cursor:pointer\">\n            <div class='plainTextContainer' style='font-weight:bolder'><i class=\"fa fa-caret-right fa-fw\" style=\"padding-right:7px;transition:all 0.3s;{{isOpen?'transform:rotate(90deg);transform-origin:25% 45%':''}}\"></i>Job was cancelled.</div>\n        </div>\n        <div class='panel-collapse' uib-collapse='!isOpen'>\n            <div class='text' style='max-height:300px;overflow:auto;padding:10px'>java.io.IOException: org.apache.flink.client.program.ProgramInvocationException: Job failed (JobID: 896a46c9a405ae61085ebc1be75ea571)\n\tat org.apache.zeppelin.flink.FlinkSqlInterrpeter.callInsertInto(FlinkSqlInterrpeter.java:538)\n\tat org.apache.zeppelin.flink.FlinkStreamSqlInterpreter.callInsertInto(FlinkStreamSqlInterpreter.java:97)\n\tat org.apache.zeppelin.flink.FlinkSqlInterrpeter.callCommand(FlinkSqlInterrpeter.java:273)\n\tat org.apache.zeppelin.flink.FlinkSqlInterrpeter.runSqlList(FlinkSqlInterrpeter.java:160)\n\tat org.apache.zeppelin.flink.FlinkSqlInterrpeter.internalInterpret(FlinkSqlInterrpeter.java:112)\n\tat org.apache.zeppelin.interpreter.AbstractInterpreter.interpret(AbstractInterpreter.java:47)\n\tat org.apache.zeppelin.interpreter.LazyOpenInterpreter.interpret(LazyOpenInterpreter.java:110)\n\tat org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer$InterpretJob.jobRun(RemoteInterpreterServer.java:852)\n\tat org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer$InterpretJob.jobRun(RemoteInterpreterServer.java:744)\n\tat org.apache.zeppelin.scheduler.Job.run(Job.java:172)\n\tat org.apache.zeppelin.scheduler.AbstractScheduler.runJob(AbstractScheduler.java:132)\n\tat org.apache.zeppelin.scheduler.ParallelScheduler.lambda$runJobInScheduler$0(ParallelScheduler.java:46)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)\n\tat java.base/java.lang.Thread.run(Thread.java:829)\nCaused by: org.apache.flink.client.program.ProgramInvocationException: Job failed (JobID: 896a46c9a405ae61085ebc1be75ea571)\n\tat org.apache.flink.client.deployment.ClusterClientJobClientAdapter.lambda$getJobExecutionResult$6(ClusterClientJobClientAdapter.java:125)\n\tat java.base/java.util.concurrent.CompletableFuture$UniApply.tryFire(CompletableFuture.java:642)\n\tat java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:506)\n\tat java.base/java.util.concurrent.CompletableFuture.complete(CompletableFuture.java:2073)\n\tat org.apache.flink.runtime.concurrent.FutureUtils.lambda$retryOperationWithDelay$9(FutureUtils.java:394)\n\tat java.base/java.util.concurrent.CompletableFuture.uniWhenComplete(CompletableFuture.java:859)\n\tat java.base/java.util.concurrent.CompletableFuture$UniWhenComplete.tryFire(CompletableFuture.java:837)\n\tat java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:506)\n\tat java.base/java.util.concurrent.CompletableFuture.complete(CompletableFuture.java:2073)\n\tat org.apache.flink.client.program.rest.RestClusterClient.lambda$pollResourceAsync$24(RestClusterClient.java:670)\n\tat java.base/java.util.concurrent.CompletableFuture.uniWhenComplete(CompletableFuture.java:859)\n\tat java.base/java.util.concurrent.CompletableFuture$UniWhenComplete.tryFire(CompletableFuture.java:837)\n\tat java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:506)\n\tat java.base/java.util.concurrent.CompletableFuture.complete(CompletableFuture.java:2073)\n\tat org.apache.flink.runtime.concurrent.FutureUtils.lambda$retryOperationWithDelay$9(FutureUtils.java:394)\n\tat java.base/java.util.concurrent.CompletableFuture.uniWhenComplete(CompletableFuture.java:859)\n\tat java.base/java.util.concurrent.CompletableFuture$UniWhenComplete.tryFire(CompletableFuture.java:837)\n\tat java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:506)\n\tat java.base/java.util.concurrent.CompletableFuture.postFire(CompletableFuture.java:610)\n\tat java.base/java.util.concurrent.CompletableFuture$UniCompose.tryFire(CompletableFuture.java:1085)\n\tat java.base/java.util.concurrent.CompletableFuture$Completion.run(CompletableFuture.java:478)\n\t... 3 more\nCaused by: org.apache.flink.runtime.client.JobCancellationException: Job was cancelled.\n\tat org.apache.flink.runtime.jobmaster.JobResult.toJobExecutionResult(JobResult.java:146)\n\tat org.apache.flink.client.deployment.ClusterClientJobClientAdapter.lambda$getJobExecutionResult$6(ClusterClientJobClientAdapter.java:123)\n\t... 23 more\n</div>\n        </div>\n    </div>\n</div>\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "FLINK JOB",
+          "tooltip": "View in Flink web UI",
+          "group": "flink",
+          "values": [
+            {
+              "jobUrl": "/flinkdashboard/#/job/896a46c9a405ae61085ebc1be75ea571",
+              "$$hashKey": "object:2546"
+            }
+          ],
+          "interpreterSettingId": "flink"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1680205254540_1847252877",
+      "id": "paragraph_1680205254540_1847252877",
+      "dateCreated": "2023-03-30T19:40:54+0000",
+      "dateStarted": "2023-03-31T16:56:49+0000",
+      "dateFinished": "2023-03-31T17:12:03+0000",
+      "status": "ABORT",
+      "$$hashKey": "object:2477"
+    },
+    {
+      "text": "%flink.ssql\n",
+      "user": "anonymous",
+      "dateUpdated": "2023-03-30T19:50:48+0000",
+      "progress": 0,
+      "config": {
+        "colWidth": 12,
+        "fontSize": 9,
+        "enabled": true,
+        "results": {},
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "editorMode": "ace/mode/sql"
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1680205848122_1711864136",
+      "id": "paragraph_1680205848122_1711864136",
+      "dateCreated": "2023-03-30T19:50:48+0000",
+      "status": "READY",
+      "$$hashKey": "object:2478"
+    }
+  ],
+  "name": "StreamJoin",
+  "id": "2HW8KXX72",
+  "defaultInterpreterGroup": "flink",
+  "version": "0.9.0",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false,
+    "looknfeel": "default",
+    "personalizedMode": "false"
+  },
+  "info": {},
+  "path": "/StreamJoin"
+}
